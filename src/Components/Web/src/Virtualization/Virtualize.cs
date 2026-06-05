@@ -50,6 +50,11 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private TItem? _previousFirstLoadedItem;
 
     private bool _itemComparerExplicitlySet;
+    
+    private bool _isPartialUpdate;
+    
+    // State tracking for partial updates
+    private Dictionary<int, TItem>? _partialItemsBuffer;
 
     private CancellationTokenSource? _refreshCts;
 
@@ -818,7 +823,21 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             _loading = true;
         }
 
-        var request = new ItemsProviderRequest(_itemsBefore, _visibleItemCapacity, cancellationToken);
+        // Initialize partial items buffer if not already done
+        _partialItemsBuffer ??= new Dictionary<int, TItem>();
+
+        // Create partial update callback that runs on the correct synchronization context
+        // This callback is now async so providers can await between ProvideItems calls
+        Func<IReadOnlyList<object>, ValueTask>? partialUpdateCallback = async (items) =>
+        {
+            _isPartialUpdate = true;
+            MergePartialItems(items);
+            // Invoke StateHasChanged on the correct context (for async providers)
+            // This ensures the UI updates happen on the Blazor renderer thread
+            await InvokeAsync(StateHasChanged);
+        };
+
+        var request = new ItemsProviderRequest(_itemsBefore, _visibleItemCapacity, cancellationToken, partialUpdateCallback);
 
         try
         {
@@ -884,7 +903,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                 }
 
                 _itemCount = result.TotalItemCount;
-                _loadedItems = result.Items;
+                if (!_isPartialUpdate)
+                {
+                    _loadedItems = result.Items;
+                }
                 _loadedItemsStartIndex = _itemsBefore;
 
                 // For DefaultItemsProvider, capture the first loaded item so we can detect
@@ -965,6 +987,70 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             && (AnchorMode & VirtualizeAnchorMode.End) != 0
             && previousItemCount <= _visibleItemCapacity;
 
+    /// <summary>
+    /// Merges partial items into the buffer when ProvideItems is called during provider execution.
+    /// Updates _loadedItems immediately to trigger rendering of partial data.
+    /// </summary>
+    private void MergePartialItems(IReadOnlyList<object> items)
+    {
+        if (_partialItemsBuffer == null)
+        {
+            return;
+        }
+        if (_partialItemsBuffer.Count == _visibleItemCapacity)
+        {
+            _partialItemsBuffer.Clear();
+        }
+
+        // Merge items into buffer
+        for (int i = 0; i < items.Count; i++)
+        {
+            _partialItemsBuffer[_partialItemsBuffer.Count] = (TItem)(object)items[i]!;
+        }
+
+        // Build a contiguous list from buffer, starting at the first available index
+        // The buffer is sparse (Dictionary), but _loadedItems must be a dense list
+        var bufferMin = _partialItemsBuffer.Keys.Min();
+        var bufferMax = _partialItemsBuffer.Keys.Max();
+
+        // Create a list spanning from min to max index, filling gaps with default values
+        // This preserves the positional relationship needed by Skip/Take calculations
+        var denseList = new List<TItem>();
+        for (int idx = bufferMin; idx <= bufferMax; idx++)
+        {
+            if (_partialItemsBuffer.TryGetValue(idx, out var item))
+            {
+                denseList.Add(item);
+            }
+            else
+            {
+                // Gap in buffer - add default placeholder
+                denseList.Add(default!);
+            }
+        }
+
+        if (denseList.Count > 0)
+        {
+            // Update _loadedItems with dense list
+            _loadedItems = denseList;
+            
+            // CRITICAL: Set _loadedItemsStartIndex to the first key in the buffer
+            // This ensures BuildRenderTree calculates Skip/Take correctly
+            // Example: if buffer has items at [0-9], _loadedItemsStartIndex = 0
+            // If buffer has items at [10-19], _loadedItemsStartIndex = 10
+            _loadedItemsStartIndex = _itemsBefore;
+
+            // Update _itemCount based on the highest index in the buffer
+            // This ensures BuildRenderTree can calculate lastItemIndex correctly:
+            // lastItemIndex = Math.Min(_itemsBefore + _visibleItemCapacity, _itemCount)
+            // If we don't set _itemCount, lastItemIndex will be 0 and itemsToShow will be empty
+            if (_itemCount == 0 || _loadedItems.Count() > _itemCount)
+            {
+                _itemCount = _loadedItems.Count();
+            }
+        }
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
@@ -972,7 +1058,8 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
 
         _currentScrollCts?.Cancel();
         _nextRenderTcs?.TrySetCanceled(CancellationToken.None);
-
+        // Clean up state tracking
+        _partialItemsBuffer?.Clear();
         if (_jsInterop != null)
         {
             await _jsInterop.DisposeAsync();
