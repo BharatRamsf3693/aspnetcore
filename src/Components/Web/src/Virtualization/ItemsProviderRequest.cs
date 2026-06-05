@@ -25,7 +25,7 @@ public readonly struct ItemsProviderRequest
     public CancellationToken CancellationToken { get; }
     
     // Callback delegate for partial updates
-    private readonly Func<IReadOnlyList<object>, int, ValueTask>? _partialUpdateCallback;
+    private readonly Func<IReadOnlyList<object>, ValueTask>? _partialUpdateCallback;
     
     /// <summary>
     /// Constructs a new <see cref="ItemsProviderRequest"/> instance.
@@ -42,7 +42,7 @@ public readonly struct ItemsProviderRequest
     /// <summary>
     /// Internal constructor that includes the partial update callback.
     /// </summary>
-    internal ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Func<IReadOnlyList<object>, int, ValueTask>? partialUpdateCallback)
+    internal ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Func<IReadOnlyList<object>, ValueTask>? partialUpdateCallback)
     {
         StartIndex = startIndex;
         Count = count;
@@ -57,12 +57,11 @@ public readonly struct ItemsProviderRequest
     /// </summary>
     /// <typeparam name="TItem">The type of items being provided.</typeparam>
     /// <param name="items">The items to provide for this partial segment.</param>
-    /// <param name="startIndex">The start index where these items should be placed in the virtualized list.</param>
     /// <exception cref="InvalidOperationException">
     /// Thrown if the request was created without partial update support (e.g., called outside a provider).
     /// </exception>
 #pragma warning disable RS0016 // Add public types and members to the declared API
-    public async ValueTask ProvideItems<TItem>(IReadOnlyList<TItem> items, int startIndex)
+    public async ValueTask ProvideItems<TItem>(IReadOnlyList<TItem> items)
 #pragma warning restore RS0016 // Add public types and members to the declared API
     {
         if (_partialUpdateCallback is null)
@@ -76,6 +75,6 @@ public readonly struct ItemsProviderRequest
 
         // Use object list as intermediate since we can't pass generic types through the callback
         var itemList = items.Cast<object>().ToList();
-        await _partialUpdateCallback(itemList, startIndex);
+        await _partialUpdateCallback(itemList);
     }
 }
