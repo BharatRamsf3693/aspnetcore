@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+
 namespace Microsoft.AspNetCore.Components.Web.Virtualization;
 
 /// <summary>
@@ -28,5 +30,15 @@ public readonly struct ItemsProviderResult<TItem>
     {
         Items = items;
         TotalItemCount = totalItemCount;
+    }
+
+    /// <summary>
+    /// Instantiates a new <see cref="ItemsProviderResult{TItem}"/> instance.
+    /// </summary>
+#pragma warning disable RS0016 // Add public types and members to the declared API
+    public ItemsProviderResult()
+#pragma warning restore RS0016 // Add public types and members to the declared API
+    : this(Enumerable.Empty<TItem>(), 0)
+    {
     }
 }
