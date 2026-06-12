@@ -1001,16 +1001,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             && previousItemCount <= _visibleItemCapacity;
 
     /// <summary>
-    /// Merges a batch of items received via an provider callback into the currently loaded items.
+    /// Merges a batch of items received via a provider callback into the currently loaded items.
     /// </summary>
     /// <param name="items">The items to merge.</param>
     /// <param name="totalItemsCount">The total number of items available from the provider.</param>
-    /// <remarks>
-    /// If the incoming batch is large enough to fill the visible capacity, it replaces the current
-    /// loaded items entirely. Otherwise, the new items are concatenated with the existing ones.
-    /// The <paramref name="totalItemsCount"/> is used to update the _itemCount when it changes or is
-    /// initially set.
-    /// </remarks>
     private void MergePartialItems(IEnumerable<object> items, int totalItemsCount)
     {
         _loadedItems ??= Array.Empty<TItem>();
