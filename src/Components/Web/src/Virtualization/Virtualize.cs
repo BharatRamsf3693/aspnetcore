@@ -900,6 +900,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
 
                         if (itemsShifted)
                         {
+                            if (_isPartialUpdate)
+                            {
+                                _loadedItems = null;
+                            }
                             result = await AdjustForPrependAsync(countDelta, totalItemsCount, cancellationToken, partialUpdateCallback);
                             totalItemsCount = result.TotalItemCount;
                             items = result.Items;
@@ -1008,18 +1012,7 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private void MergePartialItems(IEnumerable<object> items, int totalItemsCount)
     {
         _loadedItems ??= Array.Empty<TItem>();
-        // When items are prepended, the '_itemComparer' callback is called twice in 'RefreshDataCoreAsync':
-        // once initially, and a second time from 'AdjustForPrependAsync'. 
-        // To ensure we only add the new items fetched through 'AdjustForPrependAsync', 
-        // we check if the incoming item count is greater than or equal to '_visibleItemCapacity'. 
-        // If it is, we reset '_loadedItems' with the newly fetched items.
-        if(items.Count() >= _visibleItemCapacity){
-            _loadedItems = items.Cast<TItem>();
-        }
-        else
-        {
-            _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
-        }
+        _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
         _loadedItemsStartIndex = _itemsBefore;
         if (_itemCount == 0 || (totalItemsCount != _itemCount && totalItemsCount != 0))
         {
