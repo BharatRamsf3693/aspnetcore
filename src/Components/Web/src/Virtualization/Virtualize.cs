@@ -36,7 +36,9 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private int _itemCount;
 
     private int _loadedItemsStartIndex;
+
     private int _previousItemCount;
+    
     internal int _lastRenderedItemCount;
 
     internal int _lastRenderedPlaceholderCount;
@@ -820,14 +822,13 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             _loading = true;
         }
 
-        // Create partial update callback that runs on the correct synchronization context
-        // This callback is now async so providers can await between ProvideItems calls
-        void partialUpdateCallback(IEnumerable<object> items, int totalCount)
+        void partialUpdateCallback(IEnumerable<object> items, int totalItemsCount)
         {
             if (!cancellationToken.IsCancellationRequested)
             {
                 _isPartialUpdate = true;
-                MergePartialItems(items, totalCount);
+                MergePartialItems(items, totalItemsCount);
+                // Prevent unnecessary renders during prepending items or out-of-range InitialIndex cases
                 if(renderOnSuccess && !(_itemsBefore > _itemCount))
                 {
                     StateHasChanged();
@@ -844,18 +845,19 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                 _loadedItems = null;
             }
             var result = await _itemsProvider(request);
-            var totalCount = _isPartialUpdate ? _itemCount : result.TotalItemCount;
+            var totalItemsCount = _isPartialUpdate ? _itemCount : result.TotalItemCount;
             var items = _isPartialUpdate ? _loadedItems : result.Items;
+
             // InitialIndex out-of-range or TotalItemCount shrank between fetches: re-clamp
             if (!cancellationToken.IsCancellationRequested
-                && totalCount > 0
-                && _itemsBefore >= totalCount)
+                && totalItemsCount > 0
+                && _itemsBefore >= totalItemsCount)
             {
-                _itemCount = totalCount;
+                _itemCount = totalItemsCount;
                 MoveWindowToContain(_itemsBefore);
                 request = new ItemsProviderRequest(_itemsBefore, _visibleItemCapacity, cancellationToken, partialUpdateCallback);
                 result = await _itemsProvider(request);
-                totalCount = _isPartialUpdate ? _itemCount : result.TotalItemCount;
+                totalItemsCount = _isPartialUpdate ? _itemCount : result.TotalItemCount;
                 items = _isPartialUpdate ? _loadedItems : result.Items;
             }
 
@@ -865,7 +867,7 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                 if(!_isPartialUpdate){
                     _previousItemCount = _itemCount;
                 }
-                var countDelta = totalCount - _previousItemCount;
+                var countDelta = totalItemsCount - _previousItemCount;
                 var itemsAdded = countDelta > 0 && _previousItemCount > 0;
                 var isDefaultProvider = _itemsProvider == DefaultItemsProvider;
 
@@ -876,8 +878,8 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                     // ReferenceEquals would always return false due to boxing.
                     if (newFirstItem != null && !EqualityComparer<TItem>.Default.Equals(_previousFirstLoadedItem, newFirstItem))
                     {
-                        result = await AdjustForPrependAsync(countDelta, totalCount, cancellationToken, null);
-                        totalCount = result.TotalItemCount;
+                        result = await AdjustForPrependAsync(countDelta, totalItemsCount, cancellationToken, null);
+                        totalItemsCount = result.TotalItemCount;
                         items = result.Items;
                     }
                     else if (ShouldAnchorForAppend(countDelta, _previousItemCount))
@@ -895,10 +897,11 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                     if (enumerator.MoveNext())
                     {
                         var itemsShifted = !ItemComparer.Equals(_previousFirstLoadedItem, enumerator.Current);
+
                         if (itemsShifted)
                         {
-                            result = await AdjustForPrependAsync(countDelta, totalCount, cancellationToken, partialUpdateCallback);
-                            totalCount = result.TotalItemCount;
+                            result = await AdjustForPrependAsync(countDelta, totalItemsCount, cancellationToken, partialUpdateCallback);
+                            totalItemsCount = result.TotalItemCount;
                             items = result.Items;
                         }
                         else if (ShouldAnchorForAppend(countDelta, _previousItemCount))
@@ -911,9 +914,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                         }
                     }
                 }
+
                 if (!_isPartialUpdate)
                 {
-                    _itemCount = totalCount;
+                    _itemCount = totalItemsCount;
                     _loadedItems = items;
                     _loadedItemsStartIndex = _itemsBefore;
                 }
@@ -997,12 +1001,24 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             && previousItemCount <= _visibleItemCapacity;
 
     /// <summary>
-    /// Merges partial items into the buffer when ProvideItems is called during provider execution.
-    /// Updates _loadedItems immediately to trigger rendering of partial data.
+    /// Merges a batch of items received via an provider callback into the currently loaded items.
     /// </summary>
-    private void MergePartialItems(IEnumerable<object> items, int totalCount)
+    /// <param name="items">The items to merge.</param>
+    /// <param name="totalItemsCount">The total number of items available from the provider.</param>
+    /// <remarks>
+    /// If the incoming batch is large enough to fill the visible capacity, it replaces the current
+    /// loaded items entirely. Otherwise, the new items are concatenated with the existing ones.
+    /// The <paramref name="totalItemsCount"/> is used to update the _itemCount when it changes or is
+    /// initially set.
+    /// </remarks>
+    private void MergePartialItems(IEnumerable<object> items, int totalItemsCount)
     {
         _loadedItems ??= Array.Empty<TItem>();
+        // When items are prepended, the '_itemComparer' callback is called twice in 'RefreshDataCoreAsync':
+        // once initially, and a second time from 'AdjustForPrependAsync'. 
+        // To ensure we only add the new items fetched through 'AdjustForPrependAsync', 
+        // we check if the incoming item count is greater than or equal to '_visibleItemCapacity'. 
+        // If it is, we reset '_loadedItems' with the newly fetched items.
         if(items.Count() >= _visibleItemCapacity){
             _loadedItems = items.Cast<TItem>();
         }
@@ -1011,10 +1027,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
             _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
         }
         _loadedItemsStartIndex = _itemsBefore;
-        if (_itemCount == 0 || (totalCount != _itemCount && totalCount != 0))
+        if (_itemCount == 0 || (totalItemsCount != _itemCount && totalItemsCount != 0))
         {
             _previousItemCount = _itemCount;
-            _itemCount = totalCount;
+            _itemCount = totalItemsCount;
         }
     }
 
