@@ -877,6 +877,8 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                     if (newFirstItem != null && !EqualityComparer<TItem>.Default.Equals(_previousFirstLoadedItem, newFirstItem))
                     {
                         result = await AdjustForPrependAsync(countDelta, totalCount, cancellationToken, null);
+                        totalCount = result.TotalItemCount;
+                        items = result.Items;
                     }
                     else if (ShouldAnchorForAppend(countDelta, _previousItemCount))
                     {
@@ -911,12 +913,9 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                 }
                 if (!_isPartialUpdate)
                 {
+                    _itemCount = totalCount;
                     _loadedItems = items;
                     _loadedItemsStartIndex = _itemsBefore;
-                    _itemCount = totalCount;
-                }
-                else{
-                    _previousItemCount = _itemCount;
                 }
 
                 // For DefaultItemsProvider, capture the first loaded item so we can detect
