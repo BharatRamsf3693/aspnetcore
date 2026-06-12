@@ -36,9 +36,8 @@ public readonly struct ItemsProviderResult<TItem>
     /// Instantiates a new <see cref="ItemsProviderResult{TItem}"/> instance.
     /// </summary>
 #pragma warning disable RS0016 // Add public types and members to the declared API
-    public ItemsProviderResult()
+    public ItemsProviderResult() : this(Enumerable.Empty<TItem>(), 0)
 #pragma warning restore RS0016 // Add public types and members to the declared API
-    : this(Enumerable.Empty<TItem>(), 0)
     {
     }
 }
