@@ -43,5 +43,4 @@ public class CacheService
 public class DynamicItem
 {
     public int Index { get; set; }
-    public int Height { get; set; }
 }
