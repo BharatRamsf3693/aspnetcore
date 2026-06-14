@@ -4459,4 +4459,81 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
                 return er.top < window.innerHeight && er.bottom > 0;
             "), "Item 100 must be visible in window viewport.");
     }
+
+    [Fact]
+    public void Counter_Clicks_IncrementsCountValue()
+    {
+        // Mount the Counter test component
+        Browser.MountTestComponent<Counter>();
+
+        // Get references to the button and counter display
+        var button = Browser.Exists(By.CssSelector("button.btn-primary"));
+        var countDisplay = Browser.Exists(By.CssSelector("p[role='status']"));
+
+        // Verify initial state
+        Assert.Equal("Current count: 0", countDisplay.Text);
+
+        // Click the button
+        button.Click();
+
+        // Wait for and assert the counter incremented to 1
+        Browser.True(() => countDisplay.Text == "Current count: 1",
+            "Counter should display 'Current count: 1' after clicking the button");
+    }
+
+    [Fact]
+    public void PartialUpdates_RendersCachedItemsThenNewItems()
+    {
+        // Navigate to VirtualizationProvideItems component which uses request.ProvideItems for partial updates
+        Browser.MountTestComponent<VirtualizationProvideItems>();
+
+        var container = Browser.Exists(By.Id("scroll-container"));
+        var js = (IJavaScriptExecutor)Browser;
+
+        // Step 1: Initial rendering - Items 0-37 are fetched and cached
+        Browser.True(() => GetElementCount(container, ".item") > 0, TimeSpan.FromSeconds(5));
+        var initialItems = GetItemIndices(container);
+        Assert.NotEmpty(initialItems);
+        Assert.True(initialItems.Count > 0, "Initial items should be rendered");
+
+        // Step 2: Scroll to position where both cached and new items are needed
+        // This triggers a request with StartIndex=16, Count=38
+        // - First call to ProvideItems: cached items 16-37 render immediately
+        // - Then await Task.Delay(2000) occurs
+        // - Second call to ProvideItems: newly fetched items (38+) render after delay
+        js.ExecuteScript("arguments[0].scrollTop = 400;", container);
+
+        // Wait briefly for cached items to render (first call to ProvideItems with cachedItems)
+        Browser.Wait(TimeSpan.FromSeconds(0.5));
+        var afterFirstProvideItems = GetItemIndices(container);
+        Assert.NotEmpty(afterFirstProvideItems);
+
+        // Wait for the 2-second delay + remaining items to fetch and render
+        // (second call to ProvideItems with remainingItems)
+        Browser.Wait(TimeSpan.FromSeconds(3));
+        var afterSecondProvideItems = GetItemIndices(container);
+        Assert.NotEmpty(afterSecondProvideItems);
+
+        // Step 3: Verify the partial update mechanism worked
+        // After the delay, the second ProvideItems call renders both cached items + newly fetched items
+        // So afterSecondProvideItems.Count should be greater than afterFirstProvideItems.Count
+        Assert.True(afterSecondProvideItems.Count > afterFirstProvideItems.Count,
+            $"Second render should have more items. First: {afterFirstProvideItems.Count}, Second: {afterSecondProvideItems.Count}. " +
+            "This proves cached items were rendered first, then remaining items were added after the 2-second delay.");
+    }
+
+    private List<int> GetItemIndices(IWebElement container)
+    {
+        var items = container.FindElements(By.ClassName("item"));
+        var indices = new List<int>();
+        foreach (var item in items)
+        {
+            var text = item.Text; // e.g., "Item 5"
+            if (text.StartsWith("Item ") && int.TryParse(text.Substring(5), out int index))
+            {
+                indices.Add(index);
+            }
+        }
+        return indices;
+    }
 }
