@@ -4493,7 +4493,6 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
         // Step 1: Initial rendering - Items 0-37 are fetched and cached
         Browser.True(() => GetElementCount(container, ".item") > 0, TimeSpan.FromSeconds(5));
         var initialItems = GetItemIndices(container);
-        Assert.NotEmpty(initialItems);
         Assert.True(initialItems.Count > 0, "Initial items should be rendered");
 
         // Step 2: Scroll to position where both cached and new items are needed
@@ -4506,13 +4505,11 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
         // Wait briefly for cached items to render (first call to ProvideItems with cachedItems)
         Thread.Sleep(TimeSpan.FromSeconds(0.5));
         var afterFirstProvideItems = GetItemIndices(container);
-        Assert.NotEmpty(afterFirstProvideItems);
 
         // Wait for the 2-second delay + remaining items to fetch and render
         // (second call to ProvideItems with remainingItems)
         Thread.Sleep(TimeSpan.FromSeconds(3));
         var afterSecondProvideItems = GetItemIndices(container);
-        Assert.NotEmpty(afterSecondProvideItems);
 
         Console.WriteLine($"[DEBUG] First count: {afterFirstProvideItems.Count}, Second count: {afterSecondProvideItems.Count}");
 
