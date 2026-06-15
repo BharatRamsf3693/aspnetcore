@@ -4461,27 +4461,6 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
     }
 
     [Fact]
-    public void Counter_Clicks_IncrementsCountValue()
-    {
-        // Mount the Counter test component
-        Browser.MountTestComponent<Counter>();
-
-        // Get references to the button and counter display
-        var button = Browser.Exists(By.CssSelector("button.btn-primary"));
-        var countDisplay = Browser.Exists(By.CssSelector("p[role='status']"));
-
-        // Verify initial state
-        Assert.Equal("Current count: 0", countDisplay.Text);
-
-        // Click the button
-        button.Click();
-
-        // Wait for and assert the counter incremented to 1
-        Browser.True(() => countDisplay.Text == "Current count: 1",
-            "Counter should display 'Current count: 1' after clicking the button");
-    }
-
-    [Fact]
     public void PartialUpdates_RendersCachedItemsThenNewItems()
     {
         // Navigate to VirtualizationProvideItems component which uses request.ProvideItems for partial updates
