@@ -44,7 +44,7 @@
                 await Task.Delay(2000);
             }
             var remainingItems = items.Skip(remainingStart).Take(remainingCount)
-                .Select(i => new DynamicItem { Index = i.Index, Height = i.Height });
+                .Select(i => new DynamicItem { Index = i.Index });
             request.ProvideItems(remainingItems, items.Count);
             CacheService.Add(remainingItems.ToList(), remainingStart);
         }
