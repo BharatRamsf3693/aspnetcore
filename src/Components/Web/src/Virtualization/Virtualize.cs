@@ -38,7 +38,7 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private int _loadedItemsStartIndex;
 
     private int _previousItemCount;
-    
+
     internal int _lastRenderedItemCount;
 
     internal int _lastRenderedPlaceholderCount;
@@ -1014,7 +1014,7 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
         _loadedItems ??= Array.Empty<TItem>();
         _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
         _loadedItemsStartIndex = _itemsBefore;
-        if (_itemCount == 0 || (totalItemsCount != _itemCount && totalItemsCount != 0))
+        if (_itemCount == 0 || totalItemsCount != _itemCount)
         {
             _previousItemCount = _itemCount;
             _itemCount = totalItemsCount;
