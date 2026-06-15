@@ -43,7 +43,6 @@ public class Program
         });
 
         builder.Services.AddScoped<PreserveStateService>();
-        builder.Services.AddScoped<CacheService>();
         builder.Services.AddTransient<FormsTest.ValidationComponentDI.SaladChef>();
 
         builder.Services.AddKeyedSingleton("keyed-service-1", TestKeyedService.Create("value-1"));

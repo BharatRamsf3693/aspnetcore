@@ -4497,29 +4497,30 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
         Assert.True(initialItems.Count > 0, "Initial items should be rendered");
 
         // Step 2: Scroll to position where both cached and new items are needed
-        // This triggers a request with StartIndex=16, Count=38
-        // - First call to ProvideItems: cached items 16-37 render immediately
+        // This triggers a request with StartIndex=25, Count=37
+        // - First call to ProvideItems: cached items 25-37 render immediately
         // - Then await Task.Delay(2000) occurs
         // - Second call to ProvideItems: newly fetched items (38+) render after delay
-        js.ExecuteScript("arguments[0].scrollTop = 400;", container);
+        js.ExecuteScript("arguments[0].scrollTop = 2500;", container);
 
         // Wait briefly for cached items to render (first call to ProvideItems with cachedItems)
-        Browser.Wait(TimeSpan.FromSeconds(0.5));
+        Thread.Sleep(TimeSpan.FromSeconds(0.5));
         var afterFirstProvideItems = GetItemIndices(container);
         Assert.NotEmpty(afterFirstProvideItems);
 
         // Wait for the 2-second delay + remaining items to fetch and render
         // (second call to ProvideItems with remainingItems)
-        Browser.Wait(TimeSpan.FromSeconds(3));
+        Thread.Sleep(TimeSpan.FromSeconds(3));
         var afterSecondProvideItems = GetItemIndices(container);
         Assert.NotEmpty(afterSecondProvideItems);
+
+        Console.WriteLine($"[DEBUG] First count: {afterFirstProvideItems.Count}, Second count: {afterSecondProvideItems.Count}");
 
         // Step 3: Verify the partial update mechanism worked
         // After the delay, the second ProvideItems call renders both cached items + newly fetched items
         // So afterSecondProvideItems.Count should be greater than afterFirstProvideItems.Count
         Assert.True(afterSecondProvideItems.Count > afterFirstProvideItems.Count,
-            $"Second render should have more items. First: {afterFirstProvideItems.Count}, Second: {afterSecondProvideItems.Count}. " +
-            "This proves cached items were rendered first, then remaining items were added after the 2-second delay.");
+            $"Second render should have more items. First: {afterFirstProvideItems.Count}, Second: {afterSecondProvideItems.Count}.");
     }
 
     private List<int> GetItemIndices(IWebElement container)
@@ -4529,7 +4530,7 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
         foreach (var item in items)
         {
             var text = item.Text; // e.g., "Item 5"
-            if (text.StartsWith("Item ") && int.TryParse(text.Substring(5), out int index))
+            if (text.StartsWith("Item ", StringComparison.Ordinal) && int.TryParse(text.Substring(5), out int index))
             {
                 indices.Add(index);
             }
