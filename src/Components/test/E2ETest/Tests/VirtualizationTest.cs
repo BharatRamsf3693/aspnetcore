@@ -4493,6 +4493,9 @@ public class VirtualizationTest : ServerTestBase<ToggleExecutionModeServerFixtur
         // Step 1: Initial rendering - Items 0-37 are fetched and cached
         Browser.True(() => GetElementCount(container, ".item") > 0, TimeSpan.FromSeconds(5));
         var initialItems = GetItemIndices(container);
+
+        Console.WriteLine($"[DEBUG] Initial items count: {initialItems.Count}");
+
         Assert.True(initialItems.Count > 0, "Initial items should be rendered");
 
         // Step 2: Scroll to position where both cached and new items are needed
