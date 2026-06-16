@@ -30,9 +30,17 @@ public readonly struct ItemsProviderRequest
     private readonly Action<IEnumerable<object>, int>? _partialUpdateCallback;
 
     /// <summary>
-    /// Internal constructor that includes the partial update callback.
+    /// Constructs a new <see cref="ItemsProviderRequest"/> instance.
     /// </summary>
-    internal ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Action<IEnumerable<object>, int>? partialUpdateCallback)
+    /// <param name="startIndex">The start index of the data segment requested.</param>
+    /// <param name="count">The requested number of items to be provided.</param>
+    /// <param name="cancellationToken">
+    /// The <see cref="System.Threading.CancellationToken"/> used to relay cancellation of the request.
+    /// </param>
+    /// <param name="partialUpdateCallback">
+    /// A callback to invoke when items are provided via <see cref="ProvideItems{TItem}"/> for partial updates.
+    /// </param>
+    public ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Action<IEnumerable<object>, int>? partialUpdateCallback)
     {
         StartIndex = startIndex;
         Count = count;
@@ -51,9 +59,7 @@ public readonly struct ItemsProviderRequest
     /// <exception cref="InvalidOperationException">
     /// Thrown if this ItemsProviderRequest does not support partial updates.
     /// </exception>
-#pragma warning disable RS0016 // Add public types and members to the declared API
     public void ProvideItems<TItem>(IEnumerable<TItem> items, int totalItemCount)
-#pragma warning restore RS0016 // Add public types and members to the declared API
     {
         if (_partialUpdateCallback is null)
         {
