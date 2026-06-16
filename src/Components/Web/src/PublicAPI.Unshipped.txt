@@ -39,6 +39,7 @@ Microsoft.AspNetCore.Components.Routing.NavLink.RelativeToCurrentUri.set -> void
 *REMOVED*static Microsoft.AspNetCore.Components.Web.WebEventCallbackFactoryEventArgsExtensions.Create(this Microsoft.AspNetCore.Components.EventCallbackFactory! factory, object! receiver, System.Func<Microsoft.AspNetCore.Components.Web.ProgressEventArgs!, System.Threading.Tasks.Task!>! callback) -> Microsoft.AspNetCore.Components.EventCallback<Microsoft.AspNetCore.Components.Web.ProgressEventArgs!>
 *REMOVED*static Microsoft.AspNetCore.Components.Web.WebEventCallbackFactoryEventArgsExtensions.Create(this Microsoft.AspNetCore.Components.EventCallbackFactory! factory, object! receiver, System.Func<Microsoft.AspNetCore.Components.Web.TouchEventArgs!, System.Threading.Tasks.Task!>! callback) -> Microsoft.AspNetCore.Components.EventCallback<Microsoft.AspNetCore.Components.Web.TouchEventArgs!>
 *REMOVED*static Microsoft.AspNetCore.Components.Web.WebEventCallbackFactoryEventArgsExtensions.Create(this Microsoft.AspNetCore.Components.EventCallbackFactory! factory, object! receiver, System.Func<Microsoft.AspNetCore.Components.Web.WheelEventArgs!, System.Threading.Tasks.Task!>! callback) -> Microsoft.AspNetCore.Components.EventCallback<Microsoft.AspNetCore.Components.Web.WheelEventArgs!>
+*REMOVED*Microsoft.AspNetCore.Components.Web.Virtualization.ItemsProviderRequest.ItemsProviderRequest(int startIndex, int count, System.Threading.CancellationToken cancellationToken) -> void
 Microsoft.AspNetCore.Components.Web.Media.FileDownload
 Microsoft.AspNetCore.Components.Web.Media.FileDownload.ChildContent.get -> Microsoft.AspNetCore.Components.RenderFragment<Microsoft.AspNetCore.Components.Web.Media.FileDownloadContext!>?
 Microsoft.AspNetCore.Components.Web.Media.FileDownload.ChildContent.set -> void
@@ -84,14 +85,19 @@ Microsoft.AspNetCore.Components.Web.SupplyParameterFromSessionAttribute
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromSessionAttribute.Name.get -> string?
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromSessionAttribute.Name.set -> void
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromSessionAttribute.SupplyParameterFromSessionAttribute() -> void
+Microsoft.AspNetCore.Components.Web.Virtualization.ItemsProviderRequest.ItemsProviderRequest(int startIndex, int count, System.Threading.CancellationToken cancellationToken, System.Action<System.Collections.Generic.IEnumerable<object!>!, int>? partialUpdateCallback) -> void
 Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.AnchorMode.get -> Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode
 Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.AnchorMode.set -> void
+Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.InitialIndex.get -> int
+Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.InitialIndex.set -> void
 Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.ItemComparer.get -> System.Collections.Generic.IEqualityComparer<TItem>!
 Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.ItemComparer.set -> void
+Microsoft.AspNetCore.Components.Web.Virtualization.Virtualize<TItem>.ScrollToIndexAsync(int itemIndex, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode
 Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode.Beginning = 1 -> Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode
 Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode.End = 2 -> Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode
 Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode.None = 0 -> Microsoft.AspNetCore.Components.Web.Virtualization.VirtualizeAnchorMode
+Microsoft.AspNetCore.Components.Web.Virtualization.ItemsProviderRequest.ProvideItems<TItem>(System.Collections.Generic.IEnumerable<TItem>! items, int totalItemCount) -> void
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromTempDataAttribute
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromTempDataAttribute.Name.get -> string?
 Microsoft.AspNetCore.Components.Web.SupplyParameterFromTempDataAttribute.Name.set -> void
