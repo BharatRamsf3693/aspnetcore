@@ -37,7 +37,7 @@ public sealed class ColumnsCollectedNotifier<TGridItem> : IComponent
 {
     private bool _isFirstRender = true;
 
-    [CascadingParameter] internal InternalGridContext<TGridItem> InternalGridContext { get; set; } = default!;
+    [CascadingParameter] internal IInternalGridContext InternalGridContext { get; set; } = default!;
 
     /// <inheritdoc/>
     public void Attach(RenderHandle renderHandle)

@@ -13,7 +13,7 @@ namespace Microsoft.AspNetCore.Components.QuickGrid;
 /// <typeparam name="TGridItem">The type of data represented by each row in the grid.</typeparam>
 public abstract partial class ColumnBase<TGridItem>
 {
-    [CascadingParameter] internal InternalGridContext<TGridItem> InternalGridContext { get; set; } = default!;
+    [CascadingParameter] internal IInternalGridContext InternalGridContext { get; set; } = default!;
 
     /// <summary>
     /// Title text for the column. This is rendered automatically if <see cref="HeaderTemplate" /> is not used.
@@ -78,8 +78,7 @@ public abstract partial class ColumnBase<TGridItem>
     /// <summary>
     /// Gets a reference to the enclosing <see cref="QuickGrid{TGridItem}" />.
     /// </summary>
-    public QuickGrid<TGridItem> Grid => InternalGridContext.Grid;
-
+    public QuickGrid<TGridItem> Grid => (QuickGrid<TGridItem>)InternalGridContext.Grid;
     /// <summary>
     /// Overridden by derived components to provide rendering logic for the column's cells.
     /// </summary>
