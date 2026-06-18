@@ -4,6 +4,9 @@
 @namespace Microsoft.AspNetCore.Components.QuickGrid
 @typeparam TGridItem
 @{
+    // Validate that SortBy type matches the grid's item type, if SortBy is specified
+    ValidateSortByTypeAtRender();
+    
     InternalGridContext.Grid.AddColumn(this, InitialSortDirection, IsDefaultSortColumn);
 }
 

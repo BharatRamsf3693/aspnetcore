@@ -112,4 +112,52 @@ public abstract partial class ColumnBase<TGridItem>
     {
         HeaderContent = RenderDefaultHeaderContent;
     }
+
+    /// <summary>
+    /// Validates that SortBy type matches the grid's item type during render phase.
+    /// This runs after cascading parameters are injected.
+    /// </summary>
+    private void ValidateSortByTypeAtRender()
+    {
+        var sortBy = SortBy;
+        if (sortBy is null)
+        {
+            return; // No sorting specified, nothing to validate
+        }
+
+        // Get the grid's actual item type
+        var gridType = InternalGridContext?.Grid?.GetType();
+        if (gridType is null)
+        {
+            return; // Grid context not available, skip validation
+        }
+
+        // Extract the TGridItem type from QuickGrid<TGridItem>
+        var gridGenericArgs = gridType.GetGenericArguments();
+        if (gridGenericArgs.Length == 0)
+        {
+            return; // Not a generic type, skip validation
+        }
+
+        var gridItemType = gridGenericArgs[0];
+
+        // Get the SortBy's generic type parameter
+        var sortByType = sortBy.GetType();
+        if (sortByType.IsGenericType && sortByType.GetGenericTypeDefinition() == typeof(GridSort<>))
+        {
+            var sortByItemType = sortByType.GetGenericArguments()[0];
+            
+            // Compare the grid's item type with the SortBy's item type
+            if (sortByItemType != gridItemType)
+            {
+                var columnDescription = string.IsNullOrEmpty(Title) 
+                    ? "A column" 
+                    : $"Column '{Title}'";
+                
+                throw new InvalidOperationException(
+                    $"The {columnDescription} was configured with a GridSort<{sortByItemType.Name}> but the containing QuickGrid uses item type {gridItemType.Name}. " +
+                    $"The GridSort type must match the QuickGrid item type. Verify the SortBy expression.");
+            }
+        }
+    }
 }
