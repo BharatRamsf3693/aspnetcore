@@ -18,14 +18,8 @@ public class TemplateColumn<TGridItem> : ColumnBase<TGridItem>
     /// </summary>
     [Parameter] public RenderFragment<TGridItem> ChildContent { get; set; } = EmptyChildContent;
 
-    private GridSort<TGridItem>? _sortBy;
-
     /// <inheritdoc/>
-    [Parameter] public override GridSort<TGridItem>? SortBy
-    {
-        get => _sortBy;
-        set => _sortBy = value;
-    }
+    [Parameter] public override GridSort<TGridItem>? SortBy { get; set; }
 
     /// <inheritdoc />
     protected internal override void CellContent(RenderTreeBuilder builder, TGridItem item)
