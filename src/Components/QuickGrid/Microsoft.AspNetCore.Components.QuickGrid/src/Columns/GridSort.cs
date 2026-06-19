@@ -87,14 +87,6 @@ public sealed class GridSort<TGridItem>
 
     internal IOrderedQueryable<TGridItem> Apply(IQueryable<TGridItem> queryable, bool ascending)
     {
-        // Validate that the queryable element type matches the GridSort type
-        // This provides a clear error message when there's a type mismatch
-        if (queryable.ElementType != typeof(TGridItem))
-        {
-            throw new InvalidOperationException(
-                $"The GridSort type does not match the QuickGrid item type. GridSort is typed for '{typeof(TGridItem).Name}' but the grid is using '{queryable.ElementType.Name}'. Verify the SortBy expression uses the correct type.");
-        }
-
         var orderedQueryable = _first(queryable, ascending);
 
         if (_then is not null)
