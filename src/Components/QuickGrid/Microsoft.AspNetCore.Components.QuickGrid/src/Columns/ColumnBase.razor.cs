@@ -13,7 +13,7 @@ namespace Microsoft.AspNetCore.Components.QuickGrid;
 /// <typeparam name="TGridItem">The type of data represented by each row in the grid.</typeparam>
 public abstract partial class ColumnBase<TGridItem>
 {
-    [CascadingParameter] internal InternalGridContext<TGridItem> InternalGridContext { get; set; } = default!;
+    [CascadingParameter] internal IInternalGridContext InternalGridContext { get; set; } = default!;
 
     /// <summary>
     /// Title text for the column. This is rendered automatically if <see cref="HeaderTemplate" /> is not used.
@@ -78,8 +78,7 @@ public abstract partial class ColumnBase<TGridItem>
     /// <summary>
     /// Gets a reference to the enclosing <see cref="QuickGrid{TGridItem}" />.
     /// </summary>
-    public QuickGrid<TGridItem> Grid => InternalGridContext.Grid;
-
+    public QuickGrid<TGridItem> Grid => (QuickGrid<TGridItem>)InternalGridContext.Grid;
     /// <summary>
     /// Overridden by derived components to provide rendering logic for the column's cells.
     /// </summary>
@@ -125,39 +124,26 @@ public abstract partial class ColumnBase<TGridItem>
             return; // No sorting specified, nothing to validate
         }
 
-        // Get the grid's actual item type
-        var gridType = InternalGridContext?.Grid?.GetType();
-        if (gridType is null)
+        if (InternalGridContext is null)
         {
             return; // Grid context not available, skip validation
         }
 
-        // Extract the TGridItem type from QuickGrid<TGridItem>
-        var gridGenericArgs = gridType.GetGenericArguments();
-        if (gridGenericArgs.Length == 0)
-        {
-            return; // Not a generic type, skip validation
-        }
+		// Get the grid's actual item type from the non-generic interface
+        var gridItemType = InternalGridContext.GridItemType;
 
-        var gridItemType = gridGenericArgs[0];
+        // Extracts the underlying model type (T) from the generic GridSort<T> object
+        var sortByItemType = sortBy.GetType().GetGenericArguments()[0];
 
-        // Get the SortBy's generic type parameter
-        var sortByType = sortBy.GetType();
-        if (sortByType.IsGenericType && sortByType.GetGenericTypeDefinition() == typeof(GridSort<>))
+        // Compare the grid's item type with the SortBy's item type
+        if (sortByItemType != gridItemType)
         {
-            var sortByItemType = sortByType.GetGenericArguments()[0];
-            
-            // Compare the grid's item type with the SortBy's item type
-            if (sortByItemType != gridItemType)
-            {
-                var columnDescription = string.IsNullOrEmpty(Title) 
-                    ? "A column" 
-                    : $"Column '{Title}'";
-                
-                throw new InvalidOperationException(
-                    $"The {columnDescription} was configured with a GridSort<{sortByItemType.Name}> but the containing QuickGrid uses item type {gridItemType.Name}. " +
-                    $"The GridSort type must match the QuickGrid item type. Verify the SortBy expression.");
-            }
+            var columnDescription = string.IsNullOrEmpty(Title)
+                ? "Column"
+                : $"Column '{Title}'";
+            throw new InvalidOperationException(
+                $"The {columnDescription} was configured with a GridSort<{sortByItemType.Name}> but the containing QuickGrid uses item type {gridItemType.Name}. " +
+                $"The GridSort type must match the QuickGrid item type. Verify the SortBy expression.");
         }
     }
 }
