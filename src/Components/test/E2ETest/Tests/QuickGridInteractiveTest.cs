@@ -164,7 +164,7 @@ public class QuickGridInteractiveTest : ServerTestBase<BasicTestAppServerSiteFix
 
         // Verify the error message contains both types for clear debugging
         var errorMessage = Browser.FindElement(By.CssSelector("#error-message")).Text;
-        Console.WriteLine(errorMessage);
+
         Assert.Equal("The Column 'Summary' was configured with a GridSort<ValueTuple`2> but the containing QuickGrid uses item type WeatherForecast. The GridSort type must match the QuickGrid item type. Verify the SortBy expression.", errorMessage);
     }
 }
