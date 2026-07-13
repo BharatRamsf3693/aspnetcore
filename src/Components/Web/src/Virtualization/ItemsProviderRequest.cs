@@ -37,10 +37,12 @@ public readonly struct ItemsProviderRequest
     /// <param name="cancellationToken">
     /// The <see cref="System.Threading.CancellationToken"/> used to relay cancellation of the request.
     /// </param>
-    /// <param name="partialUpdateCallback">
-    /// A callback to invoke when items are provided via <see cref="ProvideItems{TItem}"/> for partial updates.
-    /// </param>
-    public ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Action<IEnumerable<object>, int>? partialUpdateCallback)
+    public ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken)
+        : this(startIndex, count, cancellationToken, partialUpdateCallback: null)
+    {
+    }
+
+    internal ItemsProviderRequest(int startIndex, int count, CancellationToken cancellationToken, Action<IEnumerable<object>, int>? partialUpdateCallback)
     {
         StartIndex = startIndex;
         Count = count;

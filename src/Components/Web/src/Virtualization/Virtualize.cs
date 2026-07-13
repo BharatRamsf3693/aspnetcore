@@ -22,6 +22,7 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private ElementReference _spacerAfter;
 
     internal int _itemsBefore;
+    internal int _previousItemsBefore;
 
     private int _visibleItemCapacity;
 
@@ -835,15 +836,46 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                 }
             }
         };
-
-        var request = new ItemsProviderRequest(_itemsBefore, _visibleItemCapacity, cancellationToken, partialUpdateCallback);
+        ItemsProviderRequest request;
+        if (_isPartialUpdate)
+        {
+            int startIndex = _itemsBefore;
+            int Count = _visibleItemCapacity;
+            if(_previousItemsBefore != _itemsBefore)
+            {
+                //if ((_previousItemsBefore+_visibleItemCapacity) > _itemsBefore)
+                if ((_itemsBefore > _previousItemsBefore) && (_itemsBefore < (_previousItemsBefore+_visibleItemCapacity)))
+                {
+                    var skipFrom = _itemsBefore - _previousItemsBefore;
+                    _loadedItems = _loadedItems?.Skip(skipFrom).Take(_visibleItemCapacity).ToList();
+                    startIndex = _itemsBefore + (_loadedItems?.Count() ?? 0);
+                    Count = _visibleItemCapacity - (_loadedItems?.Count() ?? 0);
+                    _loadedItemsStartIndex = _itemsBefore;
+                }
+                else if ((_itemsBefore < _previousItemsBefore)&& ((_itemsBefore+_visibleItemCapacity) > _previousItemsBefore))
+                {
+                    var neededCount = _itemsBefore + _visibleItemCapacity - _previousItemsBefore;
+                    _loadedItems = _loadedItems?.Skip(0).Take(neededCount).ToList();
+                    Count = _visibleItemCapacity - (_loadedItems?.Count() ?? 0);
+                }
+                else
+                {
+                    _loadedItems = null;
+                    _loadedItemsStartIndex = _itemsBefore;
+                }
+            }
+            //_previousItemsBefore = _itemsBefore;
+            //_loadedItems = null;
+            //_loadedItemsStartIndex = _itemsBefore;
+            request = new ItemsProviderRequest(startIndex, Count, cancellationToken, partialUpdateCallback);
+        }
+        else
+        {
+            request = new ItemsProviderRequest(_itemsBefore, _visibleItemCapacity, cancellationToken, partialUpdateCallback);
+        }
 
         try
         {
-            if (_isPartialUpdate)
-            {
-                _loadedItems = null;
-            }
             var result = await _itemsProvider(request);
             var totalItemsCount = _isPartialUpdate ? _itemCount : result.TotalItemCount;
             var items = _isPartialUpdate ? _loadedItems : result.Items;
@@ -924,6 +956,10 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
                     _itemCount = totalItemsCount;
                     _loadedItems = items;
                     _loadedItemsStartIndex = _itemsBefore;
+                }
+                else
+                {
+                    _previousItemsBefore = _itemsBefore;
                 }
 
                 // For DefaultItemsProvider, capture the first loaded item so we can detect
@@ -1012,8 +1048,26 @@ public sealed class Virtualize<TItem> : ComponentBase, IVirtualizeJsCallbacks, I
     private void MergePartialItems(IEnumerable<object> items, int totalItemsCount)
     {
         _loadedItems ??= Array.Empty<TItem>();
-        _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
-        _loadedItemsStartIndex = _itemsBefore;
+        //if ((_itemsBefore < _previousItemsBefore)&& ((_itemsBefore+_visibleItemCapacity) > _previousItemsBefore))
+        if (_itemsBefore < _previousItemsBefore)
+        {
+           _loadedItems = items.Cast<TItem>().Concat(_loadedItems);
+           _loadedItemsStartIndex =  _loadedItemsStartIndex - items.Count();
+        //    if(_loadedItemsStartIndex < _itemsBefore) // only during upward scroll without break points, this condition is true. When breakpoint are set this is false.
+        //    {
+        //         _loadedItemsStartIndex = _itemsBefore;
+        //    }
+        //    if(_loadedItems.Count() == _visibleItemCapacity)
+        // {
+        //         _loadedItemsStartIndex = _itemsBefore;
+        //     }
+
+        }
+        else
+        {
+            _loadedItems = _loadedItems.Concat(items.Cast<TItem>());
+        }
+        //_loadedItemsStartIndex = _itemsBefore; // Need to remove this if not needed.
         if (_itemCount == 0 || totalItemsCount != _itemCount)
         {
             _previousItemCount = _itemCount;
