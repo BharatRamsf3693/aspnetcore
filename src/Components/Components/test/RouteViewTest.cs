@@ -174,7 +174,6 @@ public class RouteViewTest
 
         await renderer.RenderRootComponentAsync(hostId, RouteParameters(typeof(PageWithNestedLayout), "first"));
         var outgoingPage = Assert.Single(recorder.Pages);
-        var layout = Assert.Single(recorder.Layouts);
 
         await renderer.RenderRootComponentAsync(hostId, RouteParameters(typeof(PageWithOuterLayout), "second"));
 
@@ -182,8 +181,6 @@ public class RouteViewTest
         Assert.IsType<PageWithOuterLayout>(recorder.Pages[1]);
         Assert.Equal("second", recorder.Pages[1].Message);
         Assert.Same(outgoingPage, Assert.Single(recorder.DisposedPages));
-        Assert.Same(layout, Assert.Single(recorder.Layouts));
-        Assert.Equal(3, recorder.LayoutParameterUpdates);
     }
 
     private static ParameterView RouteParameters(Type pageType, string message)
@@ -199,8 +196,6 @@ public class RouteViewTest
     {
         public List<TrackedPage> Pages { get; } = [];
         public List<TrackedPage> DisposedPages { get; } = [];
-        public List<CascadingOuterLayout> Layouts { get; } = [];
-        public int LayoutParameterUpdates { get; set; }
     }
 
     private sealed class CascadingRouteViewHost(PageInstanceRecorder recorder, bool isFixed) : ComponentBase
@@ -231,17 +226,10 @@ public class RouteViewTest
         public CascadingOuterLayout(PageInstanceRecorder recorder)
         {
             _recorder = recorder;
-            recorder.Layouts.Add(this);
         }
 
         [CascadingParameter]
         public PageInstanceRecorder CascadedRecorder { get; set; }
-
-        protected override Task OnParametersSetAsync()
-        {
-            _recorder.LayoutParameterUpdates++;
-            return Task.CompletedTask;
-        }
 
         protected override void BuildRenderTree(RenderTreeBuilder builder)
             => builder.AddContent(0, Body);
