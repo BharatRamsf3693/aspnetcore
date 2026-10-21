@@ -221,13 +221,6 @@ public class RouteViewTest
 
     private sealed class CascadingOuterLayout : LayoutComponentBase
     {
-        private readonly PageInstanceRecorder _recorder;
-
-        public CascadingOuterLayout(PageInstanceRecorder recorder)
-        {
-            _recorder = recorder;
-        }
-
         [CascadingParameter]
         public PageInstanceRecorder CascadedRecorder { get; set; }
 
