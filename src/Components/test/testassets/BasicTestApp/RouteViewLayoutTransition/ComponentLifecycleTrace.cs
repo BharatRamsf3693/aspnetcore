@@ -32,14 +32,4 @@ public static class InstantiationTrace
 
         Changed?.Invoke();
     }
-
-    public static void Clear()
-    {
-        lock (SyncRoot)
-        {
-            EntriesInternal.Clear();
-        }
-
-        Changed?.Invoke();
-    }
 }

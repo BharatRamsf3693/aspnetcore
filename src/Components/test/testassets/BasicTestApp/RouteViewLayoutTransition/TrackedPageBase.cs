@@ -9,8 +9,6 @@ public abstract class TrackedPageBase : ComponentBase, IDisposable
 {
     private readonly string _instanceId = Guid.NewGuid().ToString("N")[..8];
 
-    protected string InstanceId => _instanceId;
-
     protected TrackedPageBase()
     {
         Log("constructor");
