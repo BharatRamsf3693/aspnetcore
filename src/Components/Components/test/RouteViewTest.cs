@@ -184,7 +184,7 @@ public class RouteViewTest
     }
 
     [Fact]
-    public async Task ChangingReferenceParameterDoesNotReplaySupersededParameters()
+    public async Task ChangingReferenceParameterDoesNotReplayStaleValues()
     {
         var recorder = new PageInstanceRecorder();
         using var services = new ServiceCollection().AddSingleton(recorder).BuildServiceProvider();
