@@ -92,6 +92,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <StaticWebAssetFingerprintPattern Include="BlazorWebAssembly" Pattern="*.js" Expression="#[.{fingerprint}]!" />
+
     <StaticWebAssetGroupDefinition Include="BlazorWebAssembly"
       Value="enabled" SourceId="$(PackageId)" Order="0"
       IncludePattern="**" />

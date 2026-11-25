@@ -26,6 +26,44 @@ public class BlazorWasmTemplateTest : BlazorTemplateTest
 
     public override string ProjectType { get; } = "blazorwasm";
 
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    public async Task BlazorWasmStandalonePublishHonorsStartupScriptFingerprinting(bool noBuild, bool fingerprint)
+    {
+        var project = await CreateBuildPublishAsync(onlyCreate: true);
+        var fingerprintArgument = $"-p:BlazorFingerprintBlazorJs={fingerprint}";
+        if (noBuild)
+        {
+            await project.RunDotNetBuildAsync(additionalArgs: $"-p:Configuration=Release {fingerprintArgument}");
+        }
+
+        await project.RunDotNetPublishAsync(
+            additionalArgs: noBuild ? $"--no-build -p:BuildProjectReferences=false {fingerprintArgument}" : fingerprintArgument,
+            noRestore: noBuild);
+
+        var wwwroot = Path.Combine(project.TemplatePublishDir, "wwwroot");
+        var html = File.ReadAllText(Path.Combine(wwwroot, "index.html"));
+        var script = Regex.Match(html, fingerprint
+            ? @"src=""(?<path>_framework/blazor\.webassembly\.[a-z0-9]{10}\.js)"""
+            : @"src=""(?<path>_framework/blazor\.webassembly\.js)""");
+        Assert.True(script.Success, $"Unexpected startup script reference in published HTML: {html}");
+        Assert.DoesNotContain("#[.{fingerprint}]", html);
+        var scriptPath = script.Groups["path"].Value;
+        Assert.True(File.Exists(Path.Combine(wwwroot, scriptPath)), $"Missing published startup script: {scriptPath}");
+
+        if (fingerprint)
+        {
+            var importMapJson = Regex.Match(html, "<script type=\"importmap\">(?<map>.*?)</script>", RegexOptions.Singleline).Groups["map"].Value;
+            using var importMapDocument = JsonDocument.Parse(importMapJson);
+            var importMap = importMapDocument.RootElement;
+            Assert.Equal($"./{scriptPath}", importMap.GetProperty("imports").GetProperty("./_framework/blazor.webassembly.js").GetString());
+            Assert.StartsWith("sha256-", importMap.GetProperty("integrity").GetProperty($"./{scriptPath}").GetString());
+        }
+    }
+
     [Fact]
     public async Task BlazorWasmStandaloneTemplateCanCreateBuildPublish()
     {

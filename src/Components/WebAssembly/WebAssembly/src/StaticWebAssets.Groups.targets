@@ -4,4 +4,15 @@
       Value="enabled"
       SourceId="Microsoft.AspNetCore.Components.WebAssembly" />
   </ItemGroup>
+
+  <!-- Keep plain startup-script filenames when fingerprinting is not enabled. Apply this after asset resolution and before compression. -->
+  <Target Name="_ApplyBlazorWebAssemblyFingerprintingOptOut"
+    AfterTargets="ResolveCoreStaticWebAssets"
+    Condition="'$(UsingMicrosoftNETSdkBlazorWebAssembly)' == 'true' and '$(BlazorFingerprintBlazorJs)' != 'true'">
+    <ItemGroup>
+      <StaticWebAsset Condition="'%(StaticWebAsset.SourceType)' == 'Discovered' and '%(StaticWebAsset.RelativePath)' == '_framework/blazor.webassembly#[.{fingerprint}]!.js'">
+        <RelativePath>_framework/blazor.webassembly#[.{fingerprint}]?.js</RelativePath>
+      </StaticWebAsset>
+    </ItemGroup>
+  </Target>
 </Project>
