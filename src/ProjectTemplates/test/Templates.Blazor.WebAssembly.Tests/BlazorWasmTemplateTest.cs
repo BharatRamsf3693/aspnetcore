@@ -37,7 +37,7 @@ public class BlazorWasmTemplateTest : BlazorTemplateTest
         var fingerprintArgument = $"-p:BlazorFingerprintBlazorJs={fingerprint}";
         if (noBuild)
         {
-            await project.RunDotNetBuildAsync(additionalArgs: $"-p:Configuration=Release {fingerprintArgument}");
+            await project.RunDotNetBuildAsync(additionalArgs: fingerprintArgument, configuration: "Release");
         }
 
         await project.RunDotNetPublishAsync(

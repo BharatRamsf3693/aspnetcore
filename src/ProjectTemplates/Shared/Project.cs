@@ -210,7 +210,7 @@ public class Project : IDisposable
         Assert.True(0 == result.ExitCode, ErrorMessages.GetFailedProcessMessage("publish", this, result));
     }
 
-    internal async Task RunDotNetBuildAsync(IDictionary<string, string> packageOptions = null, string additionalArgs = null, bool errorOnBuildWarning = true)
+    internal async Task RunDotNetBuildAsync(IDictionary<string, string> packageOptions = null, string additionalArgs = null, bool errorOnBuildWarning = true, string configuration = "Debug")
     {
         Output.WriteLine("Building ASP.NET Core application...");
         packageOptions = AddBootstrapSdkEnvironmentVariables(packageOptions);
@@ -222,7 +222,7 @@ public class Project : IDisposable
             Output,
             TemplateOutputDir,
             DotNetMuxer.MuxerPathOrDefault(),
-            $"build --no-restore -c Debug /bl {additionalArgs}",
+            $"build --no-restore -c {configuration} /bl {additionalArgs}",
             packageOptions,
             envVarToRemove: _msBuildSdksPathEnvironmentVariable);
         await execution.Exited;
