@@ -164,12 +164,18 @@ public class PackageLayoutTests
     {
         using var package = PackageArchive.Open(WebAssemblyPackageId);
 
-        Assert.True(package.HasEntry("staticwebassets/_framework/blazor.webassembly.js"));
         Assert.True(package.HasEntry("staticwebassets/_framework/blazor.webassembly.js.map"));
 
         using var manifest = package.ReadPackageAssetsManifest();
-        var js = GetAsset(manifest, "_framework/blazor.webassembly.js");
+        var js = Assert.Single(manifest.RootElement.GetProperty("Assets").EnumerateObject(),
+            asset => asset.Value.GetProperty("RelativePath").GetString() == "_framework/blazor.webassembly#[.{fingerprint}]!.js").Value;
+        Assert.True(package.HasEntry(js.GetProperty("Identity").GetString()!));
         Assert.Equal("Framework", js.GetProperty("SourceType").GetString());
+        Assert.False(string.IsNullOrEmpty(js.GetProperty("Fingerprint").GetString()));
+        Assert.False(string.IsNullOrEmpty(js.GetProperty("Integrity").GetString()));
+
+        var sourceMap = GetAsset(manifest, "_framework/blazor.webassembly.js.map");
+        Assert.Equal("_framework/blazor.webassembly.js#[.{fingerprint}]?.map", sourceMap.GetProperty("RelativePath").GetString());
     }
 
     [ConditionalFact]

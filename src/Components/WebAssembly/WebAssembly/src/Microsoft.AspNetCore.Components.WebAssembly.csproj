@@ -99,18 +99,22 @@
       IncludePattern="**" />
   </ItemGroup>
 
-  <!-- Multiple builds of this project can share static web asset intermediates. Replace these entries
-       at the final NuGet boundary so the package manifest cannot reference files omitted from the nupkg. -->
+  <!-- Multiple builds can share static web asset intermediates. Restore the generated package paths
+       at the final NuGet boundary so fingerprinted manifest entries match the files in the nupkg. -->
   <Target Name="_EnsureBlazorWebAssemblyPackageAssets"
     BeforeTargets="GenerateNuspec"
     Condition="'$(IsPackable)' == 'true'">
+    <StaticWebAssetsReadPackManifest ManifestPath="$(StaticWebAssetPackManifestPath)">
+      <Output TaskParameter="Files" ItemName="_BlazorWasmPackageFile" />
+    </StaticWebAssetsReadPackManifest>
+
     <ItemGroup>
       <_MissingBlazorWasmJSFile Include="@(_BlazorWasmJSFile)"
         Condition="'$(BuildNodeJS)' != 'false' and !Exists('%(_BlazorWasmJSFile.Identity)')" />
-      <_ExistingBlazorWasmJSFile Include="@(_BlazorWasmJSFile)"
-        Condition="'$(BuildNodeJS)' != 'false' and Exists('%(_BlazorWasmJSFile.Identity)')">
-        <PackagePath>staticwebassets\_framework\%(FileName)%(Extension)</PackagePath>
-      </_ExistingBlazorWasmJSFile>
+      <_ExistingBlazorWasmJSFile Include="@(_BlazorWasmPackageFile)"
+        Condition="'$(BuildNodeJS)' != 'false' and Exists('%(_BlazorWasmPackageFile.Identity)') and
+          ('%(_BlazorWasmPackageFile.FileName)%(_BlazorWasmPackageFile.Extension)' == 'blazor.webassembly.js' or
+           '%(_BlazorWasmPackageFile.FileName)%(_BlazorWasmPackageFile.Extension)' == 'blazor.webassembly.js.map')" />
       <_PackageFiles Remove="@(_ExistingBlazorWasmJSFile)" />
       <_PackageFiles Include="@(_ExistingBlazorWasmJSFile)" />
     </ItemGroup>
