@@ -174,6 +174,26 @@ public class WebViewBuildBehaviorTests
         Assert.Contains(".lib.module.js", publishedContent);
     }
 
+    [ConditionalFact]
+    public void WebAssemblyPackageAssets_SkipsMissingManifestOnlyWhenNodeBuildIsDisabled()
+    {
+        using var build = new ConsumerBuild(_output, isolateNuGetFeeds: false);
+        var projectPath = Path.Combine(StaticWebAssetsTestData.RepoRoot,
+            "src", "Components", "WebAssembly", "WebAssembly", "src", "Microsoft.AspNetCore.Components.WebAssembly.csproj");
+        var manifestPath = Path.Combine(build.Root, "staticwebassets.pack.json");
+
+        var skipped = build.Run(
+            $"msbuild -t:_EnsureBlazorWebAssemblyPackageAssets -p:BuildNodeJS=false -p:StaticWebAssetPackManifestPath=\"{manifestPath}\"",
+            projectPath);
+        Assert.True(skipped.Succeeded, skipped.Output);
+
+        var required = build.Run(
+            $"msbuild -t:_EnsureBlazorWebAssemblyPackageAssets -p:BuildNodeJS=true -p:StaticWebAssetPackManifestPath=\"{manifestPath}\"",
+            projectPath);
+        Assert.False(required.Succeeded, required.Output);
+        Assert.Contains($"Manifest file at '{manifestPath}' not found.", required.Output);
+    }
+
     private static string[] GetModulesManifestRoutes(string root)
     {
         var manifestPath = FindFile(root, "app", "app.staticwebassets.endpoints.json")
