@@ -31,10 +31,11 @@ public class BlazorWasmTemplateTest : BlazorTemplateTest
     [InlineData(true, true)]
     [InlineData(false, false)]
     [InlineData(true, false)]
-    public async Task BlazorWasmStandalonePublishHonorsStartupScriptFingerprinting(bool noBuild, bool fingerprint)
+    [InlineData(false, null)]
+    public async Task BlazorWasmStandalonePublishHonorsStartupScriptFingerprinting(bool noBuild, bool? fingerprint)
     {
         var project = await CreateBuildPublishAsync(onlyCreate: true);
-        var fingerprintArgument = $"-p:BlazorFingerprintBlazorJs={fingerprint}";
+        var fingerprintArgument = fingerprint.HasValue ? $"-p:BlazorFingerprintBlazorJs={fingerprint}" : null;
         if (noBuild)
         {
             await project.RunDotNetBuildAsync(additionalArgs: fingerprintArgument, configuration: "Release");
@@ -46,7 +47,8 @@ public class BlazorWasmTemplateTest : BlazorTemplateTest
 
         var wwwroot = Path.Combine(project.TemplatePublishDir, "wwwroot");
         var html = File.ReadAllText(Path.Combine(wwwroot, "index.html"));
-        var script = Regex.Match(html, fingerprint
+        var fingerprintEnabled = fingerprint ?? true;
+        var script = Regex.Match(html, fingerprintEnabled
             ? @"src=""(?<path>_framework/blazor\.webassembly\.[a-z0-9]{10}\.js)"""
             : @"src=""(?<path>_framework/blazor\.webassembly\.js)""");
         Assert.True(script.Success, $"Unexpected startup script reference in published HTML: {html}");
@@ -54,7 +56,7 @@ public class BlazorWasmTemplateTest : BlazorTemplateTest
         var scriptPath = script.Groups["path"].Value;
         Assert.True(File.Exists(Path.Combine(wwwroot, scriptPath)), $"Missing published startup script: {scriptPath}");
 
-        if (fingerprint)
+        if (fingerprintEnabled)
         {
             var importMapJson = Regex.Match(html, "<script type=\"importmap\">(?<map>.*?)</script>", RegexOptions.Singleline).Groups["map"].Value;
             using var importMapDocument = JsonDocument.Parse(importMapJson);
