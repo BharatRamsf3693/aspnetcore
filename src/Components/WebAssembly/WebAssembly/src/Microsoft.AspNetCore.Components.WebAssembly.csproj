@@ -103,16 +103,16 @@
        at the final NuGet boundary so fingerprinted manifest entries match the files in the nupkg. -->
   <Target Name="_EnsureBlazorWebAssemblyPackageAssets"
     BeforeTargets="GenerateNuspec"
-    Condition="'$(IsPackable)' == 'true'">
+    Condition="'$(IsPackable)' == 'true' and '$(BuildNodeJS)' != 'false'">
     <StaticWebAssetsReadPackManifest ManifestPath="$(StaticWebAssetPackManifestPath)">
       <Output TaskParameter="Files" ItemName="_BlazorWasmPackageFile" />
     </StaticWebAssetsReadPackManifest>
 
     <ItemGroup>
       <_MissingBlazorWasmJSFile Include="@(_BlazorWasmJSFile)"
-        Condition="'$(BuildNodeJS)' != 'false' and !Exists('%(_BlazorWasmJSFile.Identity)')" />
+        Condition="!Exists('%(_BlazorWasmJSFile.Identity)')" />
       <_ExistingBlazorWasmJSFile Include="@(_BlazorWasmPackageFile)"
-        Condition="'$(BuildNodeJS)' != 'false' and Exists('%(_BlazorWasmPackageFile.Identity)') and
+        Condition="Exists('%(_BlazorWasmPackageFile.Identity)') and
           ('%(_BlazorWasmPackageFile.FileName)%(_BlazorWasmPackageFile.Extension)' == 'blazor.webassembly.js' or
            '%(_BlazorWasmPackageFile.FileName)%(_BlazorWasmPackageFile.Extension)' == 'blazor.webassembly.js.map')" />
       <_PackageFiles Remove="@(_ExistingBlazorWasmJSFile)" />
