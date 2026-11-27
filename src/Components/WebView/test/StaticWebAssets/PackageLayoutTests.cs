@@ -169,9 +169,11 @@ public class PackageLayoutTests
         using var manifest = package.ReadPackageAssetsManifest();
         var js = Assert.Single(manifest.RootElement.GetProperty("Assets").EnumerateObject(),
             asset => asset.Value.GetProperty("RelativePath").GetString() == "_framework/blazor.webassembly#[.{fingerprint}]!.js").Value;
+        var fingerprint = js.GetProperty("Fingerprint").GetString();
+        Assert.Equal($"staticwebassets/_framework/blazor.webassembly.{fingerprint}.js", js.GetProperty("Identity").GetString());
         Assert.True(package.HasEntry(js.GetProperty("Identity").GetString()!));
         Assert.Equal("Framework", js.GetProperty("SourceType").GetString());
-        Assert.False(string.IsNullOrEmpty(js.GetProperty("Fingerprint").GetString()));
+        Assert.False(string.IsNullOrEmpty(fingerprint));
         Assert.False(string.IsNullOrEmpty(js.GetProperty("Integrity").GetString()));
 
         var sourceMap = GetAsset(manifest, "_framework/blazor.webassembly.js.map");
